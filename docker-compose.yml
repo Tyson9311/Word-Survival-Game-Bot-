@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  word-survival-bot:
+    image: word-survival-bot:latest
+    build: .
+    container_name: word-survival-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./sudo.json:/app/sudo.json
