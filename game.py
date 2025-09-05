@@ -1,20 +1,33 @@
 import random
-import re
 import time
-from dictionary import WORDS, is_english
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Dict, Any, Tuple
 
-CATEGORIES = json.loads(Path("data/categories.json").read_text())
+from dictionary import WORDS, is_english
 
-def random_from(lst): return random.choice(lst)
-def random_letter(): return random.choice("abcdefghijklmnopqrstuvwxyz")
-def clamp(n, mn, mx): return max(mn, min(mx, n))
+# Load categories
+CAT_FILE = Path("data/categories.json")
+if not CAT_FILE.exists():
+    CAT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CAT_FILE.write_text(json.dumps({"fruits": ["apple","banana","mango"]}, indent=2))
+CATEGORIES: Dict[str, list] = json.loads(CAT_FILE.read_text())
 
-def init_game(chat_id: int):
+MODES = ["snake", "ladder", "category", "stop"]
+
+MAX_PLAYERS_DEFAULT = 15
+
+def _rand_from(lst):
+    return random.choice(lst)
+
+def _rand_letter():
+    return random.choice("abcdefghijklmnopqrstuvwxyz")
+
+def init_game(chat_id: int) -> Dict[str, Any]:
     return {
+        "chat_id": chat_id,
         "lobby_open": True,
-        "lobby_players": [],  # {id, username}
+        "lobby_players": [],
         "running": False,
         "players": [],
         "alive": set(),
@@ -25,52 +38,69 @@ def init_game(chat_id: int):
         "mode": None,
         "constraints": {"min_len": 3, "max_len": 10, "time": 15},
         "current": None,
-        "start_time": None,
+        "reminder_task": None,
+        "used_words": set(),         # Anti-Repeat
+        "max_players": MAX_PLAYERS_DEFAULT
     }
 
-def update_constraints(game):
+def update_constraints(game: Dict[str, Any]):
     wc = game["word_count"]
     if wc >= 100:
-        game["constraints"] = {"min_len": 10, "max_len": 30, "time": 10}
+        game["constraints"] = {"min_len": 10, "max_len": 30, "time": 15}
     elif wc >= 75:
         game["constraints"] = {"min_len": 7, "max_len": 30, "time": 15}
     else:
         game["constraints"] = {"min_len": 3, "max_len": 10, "time": 15}
 
-MODES = ["snake","ladder","category","stop"]
-
-def build_prompt(game, user):
-    mode = random_from(MODES)
+def build_prompt(game: Dict[str, Any], user: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    mode = _rand_from(MODES)
     game["mode"] = mode
-    last = game["last_word"] or random_from(WORDS)
-    game["last_word"] = last
+    base = game["last_word"] or _rand_from(WORDS)
+    game["last_word"] = base
 
     if mode == "snake":
-        start = last[-1]
-        return f"@{user['username']}, word must start with '{start.upper()}'", {"start": start}
-    elif mode == "ladder":
-        return f"@{user['username']}, change '{last.upper()}' by ONE letter", {"base": last}
-    elif mode == "category":
-        cat = random_from(list(CATEGORIES.keys()))
-        return f"@{user['username']}, word in category '{cat.upper()}'", {"cat": cat}
-    elif mode == "stop":
-        f = random_letter()
-        return f"@{user['username']}, word WITHOUT '{f.upper()}'", {"f": f}
+        start = base[-1]
+        return (f"@{user['username']}, your word must start with <b>{start.upper()}</b> "
+                f"(⏳ {game['constraints']['time']}s)"), {"start": start}
+    if mode == "ladder":
+        return (f"@{user['username']}, change <b>{base.upper()}</b> by exactly <b>one</b> letter "
+                f"(⏳ {game['constraints']['time']}s)"), {"base": base}
+    if mode == "category":
+        cat = _rand_from(list(CATEGORIES.keys()))
+        return (f"@{user['username']}, give a word in category <b>{cat.upper()}</b> "
+                f"(⏳ {game['constraints']['time']}s)"), {"cat": cat}
+    forb = _rand_letter()
+    return (f"@{user['username']}, give a valid word <b>without</b> the letter <b>{forb.upper()}</b> "
+            f"(⏳ {game['constraints']['time']}s)"), {"f": forb}
 
-def validate_word(game, word, mode, meta):
-    word = word.lower()
+def validate_word(game: Dict[str, Any], word: str, mode: str, meta: Dict[str, Any]) -> Tuple[bool, str]:
+    if not word:
+        return False, "Empty word."
+    w = word.strip().lower()
     cl = game["constraints"]
-    if not is_english(word):
-        return False,"English only"
-    if len(word)<cl["min_len"] or len(word)>cl["max_len"]:
-        return False,f"Length {cl['min_len']}-{cl['max_len']} required"
 
-    if mode=="snake" and not word.startswith(meta["start"]): return False,f"Must start with '{meta['start']}'"
-    if mode=="ladder":
-        base=meta["base"].lower()
-        if len(word)!=len(base): return False,"Length mismatch"
-        diff=sum(1 for a,b in zip(word,base) if a!=b)
-        if diff!=1: return False,"Must change 1 letter"
-    if mode=="category" and word not in CATEGORIES.get(meta["cat"],[]): return False,"Not in category"
-    if mode=="stop" and meta["f"] in word: return False,f"Forbidden '{meta['f']}'"
-    return True,""
+    if not is_english(w):
+        return False, "English letters only."
+    if not (cl["min_len"] <= len(w) <= cl["max_len"]):
+        return False, f"Word length must be {cl['min_len']}–{cl['max_len']}."
+    if w in game["used_words"]:
+        return False, "Word already used in this game."
+
+    if mode == "snake":
+        if not w.startswith(meta["start"]):
+            return False, f"Must start with '{meta['start']}'."
+    elif mode == "ladder":
+        base = meta["base"].lower()
+        if len(w) != len(base):
+            return False, "Length must match the base word."
+        diff = sum(1 for a, b in zip(w, base) if a != b)
+        if diff != 1:
+            return False, "Change exactly one letter."
+    elif mode == "category":
+        allowed = CATEGORIES.get(meta["cat"], [])
+        if w not in allowed:
+            return False, f"Not in category '{meta['cat']}'."
+    elif mode == "stop":
+        if meta["f"] in w:
+            return False, f"Forbidden letter '{meta['f']}' present."
+    return True, ""
