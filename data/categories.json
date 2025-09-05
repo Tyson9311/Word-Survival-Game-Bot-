@@ -1,53 +1,41 @@
 {
   "fruits": [
-    "apple","banana","mango","orange","grape",
-    "pineapple","watermelon","strawberry","papaya",
+    "apple","banana","mango","orange","grape","pineapple","watermelon","strawberry","papaya",
     "pomegranate","kiwi","peach","plum","apricot","cherry"
   ],
   "animals": [
-    "tiger","lion","elephant","giraffe","zebra",
-    "rabbit","kangaroo","panda","bear","wolf",
+    "tiger","lion","elephant","giraffe","zebra","rabbit","kangaroo","panda","bear","wolf",
     "fox","cat","dog","monkey","dolphin","shark","whale"
   ],
   "countries": [
-    "india","china","japan","france","germany",
-    "italy","spain","portugal","brazil","argentina",
-    "mexico","canada","usa","russia","egypt",
-    "kenya","nigeria","turkey","iran","thailand","nepal"
+    "india","china","japan","france","germany","italy","spain","portugal","brazil","argentina",
+    "mexico","canada","usa","russia","egypt","kenya","nigeria","turkey","iran","thailand","nepal"
   ],
   "colors": [
-    "red","blue","green","yellow","black",
-    "white","orange","purple","pink","brown",
+    "red","blue","green","yellow","black","white","orange","purple","pink","brown",
     "grey","violet","indigo","gold","silver"
   ],
   "sports": [
-    "cricket","football","soccer","tennis","hockey",
-    "basketball","baseball","rugby","golf","badminton",
+    "cricket","football","soccer","tennis","hockey","basketball","baseball","rugby","golf","badminton",
     "swimming","cycling","running","boxing","wrestling"
   ],
   "vehicles": [
-    "car","truck","bus","train","plane","ship",
-    "boat","scooter","bicycle","motorcycle","tram",
-    "submarine","helicopter","rocket","tractor"
+    "car","truck","bus","train","plane","ship","boat","scooter","bicycle","motorcycle",
+    "tram","submarine","helicopter","rocket","tractor"
   ],
   "professions": [
-    "doctor","engineer","teacher","student","pilot",
-    "driver","farmer","soldier","police","scientist",
-    "lawyer","judge","actor","singer","dancer",
-    "writer","artist","painter","programmer","gamer"
+    "doctor","engineer","teacher","student","pilot","driver","farmer","soldier","police","scientist",
+    "lawyer","judge","actor","singer","dancer","writer","artist","painter","programmer","gamer"
   ],
   "foods": [
-    "pizza","burger","pasta","sandwich","noodles",
-    "rice","bread","cake","donut","biscuit",
+    "pizza","burger","pasta","sandwich","noodles","rice","bread","cake","donut","biscuit",
     "soup","salad","cheese","butter","icecream"
   ],
   "planets": [
-    "mercury","venus","earth","mars","jupiter",
-    "saturn","uranus","neptune","pluto"
+    "mercury","venus","earth","mars","jupiter","saturn","uranus","neptune","pluto"
   ],
   "instruments": [
-    "guitar","piano","violin","drum","flute",
-    "trumpet","saxophone","cello","tabla","harmonica",
+    "guitar","piano","violin","drum","flute","trumpet","saxophone","cello","tabla","harmonica",
     "keyboard","banjo","clarinet"
   ]
 }
